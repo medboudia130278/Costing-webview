@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MCCP — Maintenance Costing Control Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════ HEADER ═══════════════════════ -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="header-logo">
+        <img src="logo.png" alt="Logo" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'" />
+        <div id="logo-fallback" class="logo-fallback">MC</div>
+      </div>
+      <div class="header-divider"></div>
+      <div class="header-titles">
+        <span class="header-app-title">Maintenance Costing Control Panel</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="header-author">Created by: Mohamed BOUDIA</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════ TOOLBAR ══════════════════════ -->
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="toolbar-left">
+        <button class="toolbar-btn" onclick="handleClearLog()">Clear Log</button>
+        <button class="toolbar-btn" onclick="handleSaveLog()">Save Log</button>
+        <button class="toolbar-btn" onclick="handleOpenLastError()">Open last error</button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn" onclick="resetAllCards()">Reset Buttons</button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn" onclick="toggleTheme()">Light / Dark</button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn" onclick="showAbout()">About</button>
+        <button class="toolbar-btn" onclick="showLicense()">Licence</button>
+      </div>
+      <div class="toolbar-right">
+        <button class="toolbar-btn toolbar-btn--primary" onclick="showHelp()">Help ↗</button>
+      </div>
+    </div>
+    <div class="toolbar-line"></div>
+  </div>
+
+  <!-- ═══════════════════════ BODY ════════════════════════ -->
+  <div class="body-layout">
+
+    <!-- ─────────────── SIDEBAR ─────────────── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-workspace">
+        <div class="ws-label">WORKSPACE</div>
+        <div class="ws-title">Maintenance Costing</div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-cat-label">CATEGORIES</div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-item active" id="nav-railway" onclick="switchSection('railway')" data-section="railway">
+          <div class="nav-stripe"></div>
+          <div class="nav-content">
+            <span class="nav-label">Railway Linear Assets</span>
+            <span class="nav-badge">2</span>
+          </div>
+        </div>
+        <div class="nav-item" id="nav-apm" onclick="switchSection('apm')" data-section="apm">
+          <div class="nav-stripe"></div>
+          <div class="nav-content">
+            <span class="nav-label">APM Linear Assets</span>
+            <span class="nav-badge">2</span>
+          </div>
+        </div>
+        <div class="nav-item" id="nav-shifts" onclick="switchSection('shifts')" data-section="shifts">
+          <div class="nav-stripe"></div>
+          <div class="nav-content">
+            <span class="nav-label">Planning &amp; Iterated Shifts</span>
+            <span class="nav-badge">4</span>
+          </div>
+        </div>
+        <div class="nav-item" id="nav-assess" onclick="switchSection('assess')" data-section="assess">
+          <div class="nav-stripe"></div>
+          <div class="nav-content">
+            <span class="nav-label">Shift Assessment &amp; Vehicles</span>
+            <span class="nav-badge">3</span>
+          </div>
+        </div>
+        <div class="nav-item" id="nav-benchmark" onclick="switchSection('benchmark')" data-section="benchmark">
+          <div class="nav-stripe"></div>
+          <div class="nav-content">
+            <span class="nav-label">Benchmark</span>
+            <span class="nav-badge">1</span>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="footer-divider"></div>
+        <div class="footer-inner">
+          <div class="footer-status-row">
+            <div class="footer-dot"></div>
+            <span class="footer-status-text">LICENCE VALID</span>
+          </div>
+          <div class="footer-name" id="footer-license-name">—</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ─────────────── CONTENT ─────────────── -->
+    <div class="content-outer">
+
+      <!-- Section header -->
+      <div class="section-header" id="section-header">
+        <div class="section-accent-bar" id="section-accent-bar"></div>
+        <div class="section-header-text">
+          <div class="section-subtitle" id="section-subtitle">RAILWAY INFRASTRUCTURE · MAINTENANCE COSTING</div>
+          <div class="section-title" id="section-title">Railway Linear Assets</div>
+        </div>
+      </div>
+      <div class="section-header-line"></div>
+
+      <!-- Card sections (stacked, only one visible at a time) -->
+      <div class="sections-stack">
+
+        <!-- RAILWAY -->
+        <div class="section-panel active" id="section-railway">
+          <div class="cards-grid">
+            <div class="card" id="card-railway-ovh" data-section="railway">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">Railway Linear Assets (Prev / Correc) + Ovh / Renew</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('railway-ovh')">RUN ▶</button>
+            </div>
+            <div class="card" id="card-railway-linear" data-section="railway">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">Railway Linear Assets (Prev / Correc)</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('railway-linear')">RUN ▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- APM -->
+        <div class="section-panel" id="section-apm">
+          <div class="cards-grid">
+            <div class="card" id="card-apm-ovh" data-section="apm">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">APM Linear Assets (Prev / Correc) + Ovh / Renew</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('apm-ovh')">RUN ▶</button>
+            </div>
+            <div class="card" id="card-apm-linear" data-section="apm">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">APM Linear Assets (Prev / Correc)</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('apm-linear')">RUN ▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SHIFTS -->
+        <div class="section-panel" id="section-shifts">
+          <div class="cards-grid">
+            <div class="card" id="card-maintenance-ovh" data-section="shifts">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">Maintenance Planning + Ovh / Renew</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('maintenance-ovh')">RUN ▶</button>
+            </div>
+            <div class="card" id="card-iterated-shift" data-section="shifts">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">Iterated Shift — Balanced Hours</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('iterated-shift')">RUN ▶</button>
+            </div>
+            <div class="card" id="card-maintenance-planning" data-section="shifts">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">Maintenance Planning</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('maintenance-planning')">RUN ▶</button>
+            </div>
+            <div class="card" id="card-shift-247" data-section="shifts">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">Shift 24/7</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('shift-247')">RUN ▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ASSESS -->
+        <div class="section-panel" id="section-assess">
+          <div class="cards-grid">
+            <div class="card" id="card-shift-assessment" data-section="assess">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">Shift Assessment — Operators</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('shift-assessment')">RUN ▶</button>
+            </div>
+            <div class="card" id="card-night-shift" data-section="assess">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">Night Shift Organization</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('night-shift')">RUN ▶</button>
+            </div>
+            <div class="card" id="card-team-vehicles" data-section="assess">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">Team Implementation — Inspection Vehicles</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('team-vehicles')">RUN ▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BENCHMARK -->
+        <div class="section-panel" id="section-benchmark">
+          <div class="cards-grid">
+            <div class="card" id="card-benchmark" data-section="benchmark">
+              <div class="card-dot"></div>
+              <div class="card-body">
+                <div class="card-title">Benchmark — Projects</div>
+                <span class="card-badge">READY</span>
+              </div>
+              <button class="run-btn" onclick="runAction('benchmark')">RUN ▶</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /sections-stack -->
+
+      <!-- LOG TERMINAL -->
+      <div class="splitter" id="splitter"></div>
+
+      <div class="log-panel">
+        <div class="log-header">
+          <div class="log-header-inner">
+            <span class="log-arrow">▶</span>
+            <span class="log-label">EXECUTION LOG</span>
+            <span class="log-live">● LIVE</span>
+          </div>
+        </div>
+        <div class="log-body">
+          <pre id="log-output" class="log-text"></pre>
+        </div>
+      </div>
+
+    </div><!-- /content-outer -->
+  </div><!-- /body-layout -->
+
+  <!-- ═══════════════════ MODALS ══════════════════════ -->
+
+  <!-- About modal -->
+  <div class="modal-overlay" id="modal-about" onclick="closeModal('modal-about')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">About</span>
+        <button class="modal-close" onclick="closeModal('modal-about')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Maintenance Costing Control Panel</strong></p>
+        <p><strong>Tool functionalities:</strong></p>
+        <ol>
+          <li>Use two input files – one for non-linear assets and another for linear assets.</li>
+          <li>For linear assets, divide the line into several sections with their own kilometer points so that the file becomes structured similarly to the non-linear assets.</li>
+          <li>Plan maintenance activities for both linear and non-linear assets over an annual calendar, and calculate the required number of technicians (day and night) per subsystem.</li>
+          <li>Estimate the annual average cost of spare parts consumption throughout the maintenance contract.</li>
+          <li>Estimate the annual cost of subcontracting.</li>
+          <li>Estimate overhaul and renewal costs over the duration of the contract, considering asset lifetime and obsolescence shorter than the contract duration.</li>
+          <li>Generate an output file with a planning sheet for each type of activity (preventive, corrective, subcontracting, overhaul/renewal) and a summary sheet presenting the overall cost estimation.</li>
+        </ol>
+        <p class="modal-author">Created by: Mohamed BOUDIA</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="closeModal('modal-about')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Licence modal -->
+  <div class="modal-overlay" id="modal-license" onclick="closeModal('modal-license')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Licence Information</span>
+        <button class="modal-close" onclick="closeModal('modal-license')">✕</button>
+      </div>
+      <div class="modal-body" id="modal-license-body">
+        <p>Loading…</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="closeModal('modal-license')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help modal -->
+  <div class="modal-overlay" id="modal-help" onclick="closeModal('modal-help')">
+    <div class="modal modal--wide" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Help / References</span>
+        <button class="modal-close" onclick="closeModal('modal-help')">✕</button>
+      </div>
+      <div class="modal-body">
+        <ul class="help-list">
+          <li><a href="https://alstomgroup.sharepoint.com/sites/Engineering_ISS_Maintenance/BTM%20Costing%20Tools/03%20_%20INFRA%20DIMENSIONING%20AND%20REPORTING%20TOOLS/References" target="_blank">Input files and coding files (folder)</a></li>
+          <li><a href="https://alstomgroup.sharepoint.com/sites/Engineering_ISS_Maintenance/BTM%20Costing%20Tools/03%20_%20INFRA%20DIMENSIONING%20AND%20REPORTING%20TOOLS/VIDEOS" target="_blank">Step-by-step costing tutorial videos (folder)</a></li>
+          <li><a href="https://alstomgroup.sharepoint.com/sites/Engineering_ISS_Maintenance/BTM%20Costing%20Tools/03%20_%20INFRA%20DIMENSIONING%20AND%20REPORTING%20TOOLS/Excel_files_input/Railway_Linear_assets_preliminary_inputs_with_ovh_renew_Vref.xlsm" target="_blank">Railway — Input file for linear assets with preventive/corrective + overhaul renewals</a></li>
+          <li><a href="https://alstomgroup.sharepoint.com/sites/Engineering_ISS_Maintenance/BTM%20Costing%20Tools/03%20_%20INFRA%20DIMENSIONING%20AND%20REPORTING%20TOOLS/Excel_files_input/Railway_NON_linear_assets_with_MEP_ovh_renew_inputs_Vref.xlsm" target="_blank">Railway — Input file for non-linear assets with preventive/corrective + overhaul renewals</a></li>
+          <li><a href="https://alstomgroup.sharepoint.com/sites/Engineering_ISS_Maintenance/BTM%20Costing%20Tools/03%20_%20INFRA%20DIMENSIONING%20AND%20REPORTING%20TOOLS/Excel_files_input/Railway_Passerelle_with_ovh_renew_MEP_Vref.xlsm" target="_blank">Railway — Passerelle file model with preventive/corrective + overhaul renewals (Excel file)</a></li>
+          <li><a href="https://alstomgroup.sharepoint.com/sites/Engineering_ISS_Maintenance/BTM%20Costing%20Tools/03%20_%20INFRA%20DIMENSIONING%20AND%20REPORTING%20TOOLS/Excel_files_input/Renewal-Tool-Estimation_new%20model_Vref.xlsm" target="_blank">Railway — Input file for rail replacement, rail grinding, and ballast tamping estimation (Excel file)</a></li>
+          <li><a href="https://alstomgroup.sharepoint.com/sites/Engineering_ISS_Maintenance/BTM%20Costing%20Tools/03%20_%20INFRA%20DIMENSIONING%20AND%20REPORTING%20TOOLS/Excel_files_input/APM_Linear_assets_preliminary_inputs_with_ovh_renew_Vref.xlsm" target="_blank">APM — Input file for linear assets with preventive/corrective + overhaul renewals (Excel file)</a></li>
+          <li><a href="https://alstomgroup.sharepoint.com/sites/Engineering_ISS_Maintenance/BTM%20Costing%20Tools/03%20_%20INFRA%20DIMENSIONING%20AND%20REPORTING%20TOOLS/Excel_files_input/APM_NON_linear_assets_with_Ovh_Renew_inputs_Vref.xlsm" target="_blank">APM — Input file for non-linear assets with preventive/corrective + overhaul renewals</a></li>
+          <li><a href="https://alstomgroup.sharepoint.com/sites/Engineering_ISS_Maintenance/BTM%20Costing%20Tools/03%20_%20INFRA%20DIMENSIONING%20AND%20REPORTING%20TOOLS/Excel_files_input/Planning_Operateurs_Configuration_Vref.xlsx" target="_blank">Input file for global headcounts (3 shifts, 24h/7d)</a></li>
+          <li><a href="https://alstomgroup.sharepoint.com/sites/Engineering_ISS_Maintenance/BTM%20Costing%20Tools/03%20_%20INFRA%20DIMENSIONING%20AND%20REPORTING%20TOOLS/Excel_files_input/team%20position_vehicles_velocity_input_Vref.xlsx" target="_blank">Input file for team positioning along the line and maintenance vehicles</a></li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="closeModal('modal-help')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error log modal -->
+  <div class="modal-overlay" id="modal-error-log" onclick="closeModal('modal-error-log')">
+    <div class="modal modal--wide" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Last Error Log</span>
+        <button class="modal-close" onclick="closeModal('modal-error-log')">✕</button>
+      </div>
+      <div class="modal-body">
+        <pre id="modal-error-content" class="error-log-pre"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="closeModal('modal-error-log')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

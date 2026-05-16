@@ -2,6 +2,7 @@
 import os
 import sys
 import argparse
+import datetime
 
 # Fix conflit Tcl/Tk entre plusieurs installations Python — doit s'exécuter avant import tkinter
 if sys.platform == "win32":
@@ -448,16 +449,23 @@ def core_process(input_file=None, output_file=None, *, silent=False):
             (tech_needed_summary["Night Gap"] > 0)
         ].copy()
         
+        # Construire le nom de fichier suggéré : [Project_name]_Shift_Orga_[date]_[heure]
+        _pg_match_so = general_params[general_params["Nom"].astype(str).str.strip() == "Project_name"]
+        _project_name_so = str(_pg_match_so.iloc[0]["Valeur"]).strip() if not _pg_match_so.empty else "Project"
+        _ts_so = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        _suggested_output_so = f"{_project_name_so}_Shift_Orga_{_ts_so}"
+
         # Message interactif pour le choix du fichier excel de sortie
         if not silent:
             show_message(
                 "Output File Saving",
-                "Please preferably name the output Excel file as 'Project_name_Shift_organization_balanced_hours_stepxx_Vxx' and save it.")
+                f"Please preferably name the output Excel file as '{_suggested_output_so}' and save it.")
         print("Please name and save the output Excel file after running the shift organization script...")
-        
+
         # Exporter le planning final vers un fichier Excel
         output_file = filedialog_asksave(
             title="Save Excel file as",
+            initialfile=_suggested_output_so,
             defaultextension=".xlsx",
             filetypes=[("Excel Files", "*.xlsx")]
         )

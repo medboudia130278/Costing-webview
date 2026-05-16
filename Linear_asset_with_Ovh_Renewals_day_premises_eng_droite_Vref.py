@@ -1,9 +1,20 @@
+import os
+import sys
+
+# Fix conflit Tcl/Tk entre plusieurs installations Python — doit s'exécuter avant import tkinter
+if sys.platform == "win32":
+    _py_dir = os.path.dirname(sys.executable)
+    _tcl_path = os.path.join(_py_dir, "tcl", "tcl8.6")
+    _tk_path  = os.path.join(_py_dir, "tcl", "tk8.6")
+    if os.path.exists(_tcl_path):
+        os.environ["TCL_LIBRARY"] = _tcl_path
+    if os.path.exists(_tk_path):
+        os.environ["TK_LIBRARY"] = _tk_path
+
 import pandas as pd
 import math
 import numpy as np
 from tkinter import Tk, filedialog, messagebox
-
-import os
 
 def lire_parametres(file_path):
     """Lit les parametres generaux depuis la feuille 'parametres_generaux', 'General Parameters' ou 'Parameters'."""

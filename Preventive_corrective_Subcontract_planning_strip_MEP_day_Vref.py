@@ -1,6 +1,18 @@
 # === Wrapped with main() by assistant ===
+import os
 import sys
 import argparse
+
+# Fix conflit Tcl/Tk entre plusieurs installations Python — doit s'exécuter avant import tkinter
+if sys.platform == "win32":
+    _py_dir = os.path.dirname(sys.executable)
+    _tcl_path = os.path.join(_py_dir, "tcl", "tcl8.6")
+    _tk_path  = os.path.join(_py_dir, "tcl", "tk8.6")
+    if os.path.exists(_tcl_path):
+        os.environ["TCL_LIBRARY"] = _tcl_path
+    if os.path.exists(_tk_path):
+        os.environ["TK_LIBRARY"] = _tk_path
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
@@ -69,23 +81,194 @@ def core_process(input_file=None, output_file=None, *, silent=False):
             except Exception:
                 print(f"{title}: {message}")
 
-        # Utiliser une boîte de dialogue pour demander à l'utilisateur de sélectionner un fichier Excel
-        # Message interactif avant de choisir le fichier excel d'entrée
-        if not silent:
+        # ── Feuilles utilisées par ce script ──────────────────────────────────
+        _NEEDED_SHEETS = [
+            'parametres_generaux', 'General Parameters', 'Parameters',
+            'maintenance_activities', 'equipements_premises',
+            'premises_positions', 'days_off',
+            'subcontract_activities', 'DEQ_VMI_activities',
+            'corrective_activities',
+        ]
+
+        def _concat_no_duplicates(df_base, df_src):
+            """Ajoute les lignes de df_src à df_base en ignorant les doublons exacts."""
+            if df_base.empty:
+                return df_src.copy()
+            if df_src.empty:
+                return df_base.copy()
+            df_base = df_base.copy()
+            df_src  = df_src.copy()
+            df_base.columns = df_base.columns.astype(str)
+            df_src.columns  = df_src.columns.astype(str)
+            common_cols = [c for c in df_base.columns if c in df_src.columns]
+            if not common_cols:
+                return df_base.copy()
+            df_src_al = df_src[common_cols].copy()
+            def _row_key(row):
+                return '|'.join(str(v) for v in row)
+            base_keys = set(df_base[common_cols].apply(_row_key, axis=1))
+            mask = ~df_src_al.apply(_row_key, axis=1).isin(base_keys)
+            return pd.concat([df_base, df_src_al[mask]], ignore_index=True)
+
+        def _build_combined_file(path1, path2):
+            """Concatène deux fichiers Excel, ne garde que les feuilles utiles,
+            sauvegarde le résultat dans le même dossier que path1."""
+            import datetime
+            from pathlib import Path
+
+            xl1 = pd.ExcelFile(path1, engine='openpyxl')
+            xl2 = pd.ExcelFile(path2, engine='openpyxl')
+            sheets1, sheets2 = set(xl1.sheet_names), set(xl2.sheet_names)
+
+            combined = {}
+            for sheet in _NEEDED_SHEETS:
+                in1, in2 = sheet in sheets1, sheet in sheets2
+                if not in1 and not in2:
+                    continue
+                if in1 and in2:
+                    df1 = pd.read_excel(xl1, sheet_name=sheet)
+                    df2 = pd.read_excel(xl2, sheet_name=sheet)
+                    merged = _concat_no_duplicates(df1, df2)
+                    print(f"  '{sheet}': {len(df1)} + {len(df2)} lignes → {len(merged)} après dédup")
+                elif in1:
+                    merged = pd.read_excel(xl1, sheet_name=sheet)
+                    print(f"  '{sheet}': Fichier 1 uniquement ({len(merged)} lignes)")
+                else:
+                    merged = pd.read_excel(xl2, sheet_name=sheet)
+                    print(f"  '{sheet}': Fichier 2 uniquement ({len(merged)} lignes)")
+                combined[sheet] = merged
+
+            # Récupérer Project_name depuis la feuille parametres_generaux
+            _pg_candidates = ['parametres_generaux', 'General Parameters', 'Parameters']
+            _pg_sheet = next((s for s in _pg_candidates if s in combined), None)
+            project_name = "Project"
+            if _pg_sheet is not None:
+                df_pg = combined[_pg_sheet]
+                df_pg.columns = df_pg.columns.astype(str).str.strip()
+                nom_col    = next((c for c in ['Nom', 'Name']    if c in df_pg.columns), None)
+                valeur_col = next((c for c in ['Valeur', 'Value'] if c in df_pg.columns), None)
+                if nom_col and valeur_col:
+                    match = df_pg[df_pg[nom_col].astype(str).str.strip() == 'Project_name']
+                    if not match.empty:
+                        project_name = str(match.iloc[0][valeur_col]).strip()
+
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+            out_path = str(Path(path1).parent / f"{project_name}_Combined_{timestamp}.xlsx")
+            with pd.ExcelWriter(out_path, engine='openpyxl') as writer:
+                for sname, df in combined.items():
+                    df.to_excel(writer, sheet_name=sname, index=False)
+            print(f"Fichier combiné sauvegardé : {out_path}")
+            return out_path
+
+        def _run_concat_ui():
+            """Fenêtre tkinter dédiée pour sélectionner deux fichiers et lancer la concaténation."""
+            result = {"path": None}
+            win = tk.Toplevel()
+            win.title("Concatenate Excel Files")
+            win.geometry("700x370")
+            win.resizable(True, True)
+            win.grab_set()
+            win.lift()
+            win.focus_force()
+
+            tk.Label(win, text="Concatenate Two Excel Files",
+                     font=("Segoe UI", 12, "bold")).pack(pady=(18, 4))
+            tk.Label(win,
+                     text="For sheets with the same name, rows from File 2 will be appended to File 1.\n"
+                          "Duplicate rows are skipped automatically.",
+                     font=("Segoe UI", 9), fg="#555555", justify="center").pack(pady=(0, 16))
+
+            frm = tk.Frame(win)
+            frm.pack(fill="x", padx=20)
+            frm.grid_columnconfigure(1, weight=1)
+            path1_var = tk.StringVar()
+            path2_var = tk.StringVar()
+
+            def browse(var, title):
+                p = filedialog.askopenfilename(
+                    title=title,
+                    filetypes=[("Excel Files", "*.xlsx *.xls *.xlsm")])
+                if p:
+                    var.set(p)
+
+            for i, (lbl, var, ttl) in enumerate([
+                ("File 1 (base):", path1_var, "Select File 1 — base file"),
+                ("File 2 (source):", path2_var, "Select File 2 — source to append"),
+            ]):
+                tk.Label(frm, text=lbl, width=15, anchor="w",
+                         font=("Segoe UI", 9)).grid(row=i, column=0, pady=8, sticky="w")
+                tk.Entry(frm, textvariable=var,
+                         font=("Segoe UI", 9)).grid(row=i, column=1, padx=6, sticky="ew")
+                tk.Button(frm, text="Browse…",
+                          command=lambda v=var, t=ttl: browse(v, t),
+                          font=("Segoe UI", 9), width=10).grid(row=i, column=2, sticky="e")
+
+            status_var = tk.StringVar()
+            tk.Label(win, textvariable=status_var, fg="red",
+                     font=("Segoe UI", 9), wraplength=620).pack(pady=(8, 0))
+
+            def on_run():
+                p1 = path1_var.get().strip()
+                p2 = path2_var.get().strip()
+                if not p1 or not p2:
+                    status_var.set("Please select both files before continuing.")
+                    return
+                status_var.set("Concatenating… please wait.")
+                win.update()
+                try:
+                    combined_path = _build_combined_file(p1, p2)
+                    result["path"] = combined_path
+                    win.destroy()
+                except Exception as exc:
+                    status_var.set(f"Error: {exc}")
+
+            btn_frm = tk.Frame(win)
+            btn_frm.pack(pady=(10, 0))
+            tk.Button(btn_frm, text="  Concatenate & Continue  ",
+                      command=on_run, bg="#1a56b0", fg="white",
+                      font=("Segoe UI", 10, "bold"), padx=10, pady=6).pack(side="left", padx=8)
+            tk.Button(btn_frm, text="Cancel", command=win.destroy,
+                      font=("Segoe UI", 10), padx=10, pady=6).pack(side="left", padx=8)
+
+            win.wait_window()
+            return result["path"]
+
+        # ── Choix : concaténer deux fichiers ou utiliser un seul ? ────────────
+        if not silent and input_file is None:
+            do_concat = messagebox.askyesno(
+                "File Selection",
+                "Do you want to concatenate two Excel files before processing?\n\n"
+                "Yes → select two files to merge into a combined input file\n"
+                "No  → select a single input file directly"
+            )
+        else:
+            do_concat = False
+
+        if do_concat:
+            print("Opening concatenation window…")
+            file_path = _run_concat_ui()
+            if not file_path:
+                print("Concatenation cancelled.")
+                raise RuntimeError("User cancelled / exited")
             show_message(
-                "Input File Selection",
-                "Please select the Excel file that may include the merged linear assets file 'Project_name_Combined_Preventive_corrective_inputs_Vxx'.")
-        print("Please select the input Excel file to run the Maintenance_planning script...")
-
-        file_path = filedialog_askopen(
-            title="Select the Excel file",
-            filetypes=[("Excel Files", "*.xlsx *.xls *.xlsm")]
-        )
-
-        # Vérifier si l'utilisateur a bien sélectionné un fichier
-        if not file_path:
-            print("No file selected. Exiting the program.")
-            raise RuntimeError("User cancelled / exited")
+                "Concatenation Complete",
+                f"Combined file saved:\n{file_path}\n\n"
+                "Now please select the output file path for the results."
+            )
+        else:
+            if not silent:
+                show_message(
+                    "Input File Selection",
+                    "Please select the Excel file that may include the merged linear assets file "
+                    "'Project_name_Combined_Preventive_corrective_inputs_Vxx'.")
+            print("Please select the input Excel file to run the Maintenance_planning script...")
+            file_path = filedialog_askopen(
+                title="Select the Excel file",
+                filetypes=[("Excel Files", "*.xlsx *.xls *.xlsm")]
+            )
+            if not file_path:
+                print("No file selected. Exiting the program.")
+                raise RuntimeError("User cancelled / exited")
 
         # Lire les données des différentes feuilles du fichier Excel
         try:
@@ -1104,6 +1287,55 @@ def core_process(input_file=None, output_file=None, *, silent=False):
         # Créer un DataFrame avec les données combinées
         synthesis_df = pd.DataFrame(synthesis_data)
 
+        # ── Mise à jour de general_parameters avec Day/Night Technicians ──────
+        nom_col    = 'Nom'    if 'Nom'    in general_parameters.columns else 'Name'
+        valeur_col = 'Valeur' if 'Valeur' in general_parameters.columns else 'Value'
+
+        # Travailler sur une copie pour garantir les assignations en place
+        general_parameters = general_parameters.copy().reset_index(drop=True)
+
+        synth_prev = synthesis_df[
+            (synthesis_df['Type'] == 'Preventive') &
+            (synthesis_df['Shift'].isin(['day', 'night']))
+        ].copy()
+
+        for _, s_row in synth_prev.iterrows():
+            subsystem = str(s_row['Subsystem']).strip()
+            shift     = str(s_row['Shift']).strip()
+
+            if shift == 'day':
+                nom_val  = 'max_day_technicians'
+                tech_val = s_row['Day Technicians Calculated']
+            else:
+                nom_val  = 'max_night_technicians'
+                tech_val = s_row['Night Technicians Calculated']
+
+            if pd.isna(tech_val):
+                continue
+            tech_val = float(tech_val)
+
+            mask = (
+                general_parameters[nom_col].astype(str).str.strip() == nom_val
+            ) & (
+                general_parameters['Subsystem'].astype(str).str.strip() == subsystem
+            )
+
+            matching_idx = general_parameters.index[mask].tolist()
+            if matching_idx:
+                for idx in matching_idx:
+                    general_parameters.at[idx, valeur_col] = tech_val
+                print(f"  Updated: {nom_val} | Subsystem={subsystem} → {tech_val}")
+            else:
+                new_row = {col: None for col in general_parameters.columns}
+                new_row[nom_col]     = nom_val
+                new_row[valeur_col]  = tech_val
+                new_row['Subsystem'] = subsystem
+                general_parameters = pd.concat(
+                    [general_parameters, pd.DataFrame([new_row])],
+                    ignore_index=True
+                )
+                print(f"  Added:   {nom_val} | Subsystem={subsystem} → {tech_val}")
+
         # Sauvegarder les plannings dans un fichier Excel
         # Message interactif avant de choisir le fichier excel de sortie
         if not silent:
@@ -1112,9 +1344,22 @@ def core_process(input_file=None, output_file=None, *, silent=False):
                 "Please preferably name the output Excel file as 'Project_name_Output_planning_and_synthesis_Vref' and save it.")
         print("Please name and save the output Excel file after running the Maintenance_planning script...")
 
+        # Construire le nom de fichier suggéré : [Project_name]_Output_Planning_[date]_[heure]
+        _nom_col_pg    = 'Nom'    if 'Nom'    in general_parameters.columns else 'Name'
+        _valeur_col_pg = 'Valeur' if 'Valeur' in general_parameters.columns else 'Value'
+        _project_name_out = "Project"
+        _pg_match = general_parameters[
+            general_parameters[_nom_col_pg].astype(str).str.strip() == 'Project_name'
+        ]
+        if not _pg_match.empty:
+            _project_name_out = str(_pg_match.iloc[0][_valeur_col_pg]).strip()
+        _ts_out = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        _suggested_output = f"{_project_name_out}_Output_Planning_{_ts_out}"
+
         # Utiliser une boîte de dialogue pour demander à l'utilisateur où enregistrer le fichier Excel
         output_file = filedialog_asksave(
             title="Save Excel file as",
+            initialfile=_suggested_output,
             defaultextension=".xlsx",
             filetypes=[("Excel Files", "*.xlsx")]
         )

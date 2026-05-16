@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────
-# PyInstaller — artefacts de build
+# PyInstaller — artefacts de build (optionnel)
 # ─────────────────────────────────────────────
 build/
 dist/

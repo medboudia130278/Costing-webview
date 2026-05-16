@@ -15,6 +15,19 @@ Le classeur Excel comporte désormais 4 feuilles :
 """
 
 from __future__ import annotations
+import os
+import sys
+
+# Fix conflit Tcl/Tk entre plusieurs installations Python — doit s'exécuter avant import tkinter
+if sys.platform == "win32":
+    _py_dir = os.path.dirname(sys.executable)
+    _tcl_path = os.path.join(_py_dir, "tcl", "tcl8.6")
+    _tk_path  = os.path.join(_py_dir, "tcl", "tk8.6")
+    if os.path.exists(_tcl_path):
+        os.environ["TCL_LIBRARY"] = _tcl_path
+    if os.path.exists(_tk_path):
+        os.environ["TK_LIBRARY"] = _tk_path
+
 from collections import defaultdict
 import pandas as pd
 from math import ceil

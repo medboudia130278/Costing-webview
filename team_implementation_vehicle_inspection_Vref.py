@@ -12,6 +12,19 @@ Sortie : Excel unique → 3 onglets
          Implantations_Jour, Implantations_Nuit, Inspection_Schedule
 """
 
+import os
+import sys
+
+# Fix conflit Tcl/Tk entre plusieurs installations Python — doit s'exécuter avant import tkinter
+if sys.platform == "win32":
+    _py_dir = os.path.dirname(sys.executable)
+    _tcl_path = os.path.join(_py_dir, "tcl", "tcl8.6")
+    _tk_path  = os.path.join(_py_dir, "tcl", "tk8.6")
+    if os.path.exists(_tcl_path):
+        os.environ["TCL_LIBRARY"] = _tcl_path
+    if os.path.exists(_tk_path):
+        os.environ["TK_LIBRARY"] = _tk_path
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import pandas as pd
@@ -19,7 +32,6 @@ import numpy as np
 import xlsxwriter
 from math import floor
 from collections import OrderedDict
-import os, sys
 from pulp import (LpProblem, LpVariable, lpSum,
                   LpMinimize, LpBinary, PULP_CBC_CMD)
 

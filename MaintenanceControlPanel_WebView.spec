@@ -24,7 +24,7 @@ datas += tmp[0]; binaries += tmp[1]; hiddenimports += tmp[2]
 tmp = collect_all('pulp')
 datas += tmp[0]; binaries += tmp[1]; hiddenimports += tmp[2]
 binaries += [(
-    'C:/Users/medbo/AppData/Roaming/Python/Python313/site-packages/pulp/solverdir/cbc/win/i64/cbc.exe',
+    'C:/Users/medbo/AppData/Roaming/Python/Python312/site-packages/pulp/solverdir/cbc/win/i64/cbc.exe',
     'pulp/solverdir/cbc/win/i64'
 )]
 

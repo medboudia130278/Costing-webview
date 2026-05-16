@@ -27,11 +27,13 @@ if sys.platform == "win32":
 
 # ── Resource path helper (dev vs. PyInstaller) ───────────────────────────────
 def _resource_path(relative_path):
+    # Vérifier d'abord si une version mise à jour existe dans _updates/
+    updates_path = os.path.join(_app_dir(), "_updates", *relative_path.split("/"))
+    if os.path.exists(updates_path):
+        return updates_path
     if getattr(sys, "frozen", False):
-        base = sys._MEIPASS
-    else:
-        base = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base, relative_path)
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
 
 def _app_dir():
     return os.path.dirname(sys.executable) if getattr(sys, "frozen", False) \
@@ -50,6 +52,14 @@ from license_check import check_or_ask_license, verify_license
 ok, msg = check_or_ask_license(show_ui=True)
 if not ok:
     sys.exit(msg)
+
+# ── Auto-updater (télécharge les scripts mis à jour depuis GitHub) ────────────
+import updater
+updater.run(timeout=12)
+# Les scripts mis à jour dans _updates/ prennent la priorité sur les bundled
+_updates_dir = os.path.join(_app_dir(), "_updates")
+if _updates_dir not in sys.path:
+    sys.path.insert(0, _updates_dir)
 
 # ── Calculation imports ──────────────────────────────────────────────────────
 import Preventive_corrective_Subcontract_planning_strip_MEP_day_Vref        as preventive_script

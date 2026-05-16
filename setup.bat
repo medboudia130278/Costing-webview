@@ -13,36 +13,36 @@ echo  Il ne sera a executer qu'une seule fois.
 echo.
 pause
 
-:: ── 1. Verifier Python ────────────────────────────────────────────
+:: ── 1. Verifier Python 3.12 ──────────────────────────────────────
 echo.
-echo  [1/3] Verification de Python...
+echo  [1/3] Verification de Python 3.12...
+
 set PYTHON=
-where py >nul 2>&1 && set PYTHON=py
+py -3.12 --version >nul 2>&1 && set PYTHON=py -3.12
 if not defined PYTHON (
-    where python >nul 2>&1 && set PYTHON=python
+    python --version 2>&1 | findstr /C:"Python 3.12" >nul 2>&1 && set PYTHON=python
 )
 
 if not defined PYTHON (
     echo.
-    echo  Python n'est pas installe.
-    echo.
-    echo  Installe Python 3.12 ou superieur depuis :
-    echo  https://www.python.org/downloads/
-    echo.
-    echo  IMPORTANT : coche "Add Python to PATH" lors de l'installation,
-    echo  puis relance ce script.
+    echo  ╔══════════════════════════════════════════════════════════╗
+    echo  ║  ATTENTION : Python 3.12 est requis                     ║
+    echo  ║                                                          ║
+    echo  ║  Cette application necessite Python 3.12 specifiquement.║
+    echo  ║  Python 3.13 et 3.14 ne sont pas encore compatibles.    ║
+    echo  ║                                                          ║
+    echo  ║  Telecharge Python 3.12 ici :                           ║
+    echo  ║  https://www.python.org/downloads/release/python-31211/ ║
+    echo  ║                                                          ║
+    echo  ║  IMPORTANT : coche "Add Python to PATH"                 ║
+    echo  ║  puis relance ce script.                                ║
+    echo  ╚══════════════════════════════════════════════════════════╝
     echo.
     pause
     exit /b 1
 )
 
-%PYTHON% -c "import sys; v=sys.version_info; print(f'  Python {v.major}.{v.minor}.{v.micro} detecte')"
-%PYTHON% -c "import sys; exit(0 if sys.version_info >= (3,10) else 1)" >nul 2>&1
-if errorlevel 1 (
-    echo  [ERREUR] Python 3.10 ou superieur requis. Mets Python a jour.
-    pause
-    exit /b 1
-)
+for /f "tokens=*" %%v in ('%PYTHON% --version 2^>^&1') do echo  %%v detecte
 echo  OK
 
 :: ── 2. Verifier Git ───────────────────────────────────────────────

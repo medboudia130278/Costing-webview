@@ -10,26 +10,32 @@ echo  ║   Created by: Mohamed BOUDIA             ║
 echo  ╚══════════════════════════════════════════╝
 echo.
 
-:: ── 1. Trouver Python (3.12 en priorité, puis 3.13, 3.11, 3.10) ──
+:: ── 1. Trouver Python 3.12 (seule version compatible) ─────────────
 set PYTHON=
-
 py -3.12 --version >nul 2>&1 && set PYTHON=py -3.12
-if not defined PYTHON py -3.11 --version >nul 2>&1 && set PYTHON=py -3.11
-if not defined PYTHON py -3.13 --version >nul 2>&1 && set PYTHON=py -3.13
-if not defined PYTHON py -3.10 --version >nul 2>&1 && set PYTHON=py -3.10
-if not defined PYTHON python --version >nul 2>&1 && set PYTHON=python
+if not defined PYTHON (
+    python --version 2>&1 | findstr /C:"Python 3.12" >nul 2>&1 && set PYTHON=python
+)
 
 if not defined PYTHON (
-    echo  [ERREUR] Python n'est pas installe ou introuvable.
-    echo.
-    echo  Installe Python depuis : https://www.python.org/downloads/
-    echo  Coche bien "Add Python to PATH" lors de l'installation.
+    echo  ╔══════════════════════════════════════════════════════════╗
+    echo  ║  ERREUR : Python 3.12 introuvable                       ║
+    echo  ║                                                          ║
+    echo  ║  Cette application necessite Python 3.12.               ║
+    echo  ║  Python 3.13 et 3.14 ne sont pas compatibles.           ║
+    echo  ║                                                          ║
+    echo  ║  Telecharge Python 3.12 ici :                           ║
+    echo  ║  https://www.python.org/downloads/release/python-31211/ ║
+    echo  ║                                                          ║
+    echo  ║  Coche "Add Python to PATH" lors de l'installation,     ║
+    echo  ║  puis relance ce fichier.                               ║
+    echo  ╚══════════════════════════════════════════════════════════╝
     echo.
     pause
     exit /b 1
 )
 
-echo  Python detecte : %PYTHON%
+echo  Python 3.12 detecte.
 
 :: ── 2. Mise a jour depuis GitHub ──────────────────────────────────
 where git >nul 2>&1
